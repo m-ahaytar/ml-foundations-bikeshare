@@ -138,4 +138,4 @@ All evaluated with MAE, RMSE, and R². Residual plots for the best model.
 
 ## Author
 
-ML course project, built as part of a machine learning foundations class.
+Ahaytar Mohamed — built as part of a machine learning foundations class.
