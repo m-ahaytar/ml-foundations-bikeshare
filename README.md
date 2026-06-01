@@ -40,7 +40,7 @@ I built separate preprocessing pipelines for classification and regression. The 
 I tested 10 classifiers plus a dummy baseline. The goal was to predict member vs casual from trip features alone — no duration, no rider ID, just what you'd know at trip start.
 
 ![Classification Comparison](assets/cls_comparison.png)
-*Tuned Random Forest edges out as the best classifier. The Dummy baseline bars are all models to the left of it.*
+*Tuned Random Forest comes out on top. The dashed line is the Dummy baseline — anything to its left is worse than just predicting the majority class every time.*
 
 **Dummy Classifier** (baseline): always predicts the majority class (member). 58.17% accuracy — the minimum bar.
 
