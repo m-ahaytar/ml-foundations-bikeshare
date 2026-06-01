@@ -44,23 +44,23 @@ I tested 10 classifiers plus a dummy baseline. The goal was to predict member vs
 
 **Dummy Classifier** (baseline): always predicts the majority class (member). 58.17% accuracy — the minimum bar.
 
-**Manual Rule Classifier**: hand-written if-else rules based on assumptions (weekend + long trip = casual, rush hour = member). Scored 57.55% — below baseline, which tells you the decision boundary is not simple.
+**Manual Rule Classifier**: I wrote a set of if-else rules by hand — "if weekend and long distance, predict casual", "if rush hour, predict member". It scored 57.55%, which is below the dummy baseline. That was the first sign that the boundary between member and casual isn't something you can capture with simple heuristics.
 
 **Logistic Regression**: fits a linear decision boundary. Fast and interpretable, but this data isn't linearly separable. 58.83%.
 
 **k-NN (k=15)**: votes by the nearest training examples. Sensitive to feature scaling (hence the pipeline). Best k was 15 after tuning — higher than the default, suggesting decision boundaries are smooth. 59.60%.
 
-**SVM (RBF kernel)**: maps data into a higher-dimensional space to find non-linear boundaries. Did well at 62.05% — the non-linear kernel helps.
+**SVM (RBF kernel)**: this surprised me a bit — 62.05%, the second-best score. The RBF kernel lets SVM draw non-linear boundaries without manually engineering interaction features. I think it worked well here because the data has a mix of categorical and continuous features that aren't linearly separable, exactly the kind of setup where a kernel method shines.
 
 **Naive Bayes**: assumes features are independent given the class. They aren't (distance and duration correlate), which dragged it to 57.85%.
 
 **Ridge Classifier**: regularized linear model, similar to logistic regression. 58.85%.
 
-**Decision Tree (max_depth=8)**: learns explicit rules you can inspect. The gap between train (65.77%) and test (61.52%) shows overfitting.
+**Decision Tree (max_depth=8)**: the train-test gap is the interesting thing here — 65.77% train vs 61.52% test. A single tree memorizes patterns that don't generalize, even with depth capped at 8. You can extract the actual rules from it, which is useful for understanding, but I wouldn't trust it for prediction on new data.
 
 **Random Forest (100 trees)**: averages many trees to reduce overfitting. 62.38%. Train accuracy was 79.17% — still some gap, but better than a single tree.
 
-**Tuned RF (GridSearchCV)**: best params were max_depth=8, min_samples_leaf=3, n_estimators=200. Almost identical to untuned at 62.40%. The defaults were already close to optimal.
+**Tuned RF (GridSearchCV)**: I ran a grid search over n_estimators, max_depth, and min_samples_leaf — the best model hit 62.40% vs the untuned RF's 62.38%. That 0.02% gain for several minutes of compute is honestly underwhelming. scikit-learn's defaults were already almost optimal for this data.
 
 **Voting Ensemble** (LR + DT + k-NN): hard voting across three model types. 60.75%.
 
@@ -69,7 +69,7 @@ I tested 10 classifiers plus a dummy baseline. The goal was to predict member vs
 The tuned Random Forest wins, but 62.4% is not a dramatic improvement over the baseline. Members and casual riders don't separate cleanly on trip features alone — especially in July, when both groups take leisure trips.
 
 ![Confusion Matrix](assets/confusion_matrix.png)
-*The tuned RF correctly identifies most casual riders but misses many members (1266 false negatives).*
+*The model gets most members right (2089 out of 2327) but struggles badly with casual riders — it predicted 1266 of them as members. When in doubt, it defaults to the majority class.*
 
 ## Regression — How Long Will the Trip Take?
 
@@ -127,11 +127,15 @@ Projecting the data into PC1–PC2 space shows overlap between members and casua
 
 ## Key Takeaways
 
-1. Random Forest was the only model that worked for both tasks. The data has non-linear relationships that linear models can't capture — and regression in particular punished them with negative R².
-2. Regression was much harder than classification. Even the best model (R² = 0.28) leaves most of the variance unexplained. You'd need weather, elevation, or road network data to do better.
-3. Negative R² is embarrassing but informative. Linear models on this data aren't just slightly bad — they're systematically wrong, because trip duration doesn't scale linearly with any single feature.
-4. Clustering didn't find strong groups. Low silhouette scores across all three methods suggest bikeshare trips form a behavioral continuum, not discrete archetypes.
-5. The 62% classification ceiling is partly seasonal. July is peak tourism in Chicago — casual and member behavior overlap more than they would in February.
+The clearest result is that Random Forest was the only model that worked for both tasks. Linear models couldn't handle the non-linear relationships, and regression in particular punished them with negative R² — they were actively worse than guessing the average. That's not because linear regression is a bad algorithm, it's because trip duration doesn't scale linearly with any available feature. A 5-minute trip and a 50-minute trip can have the same distance and start location.
+
+Regression turned out to be much harder than classification. Even the best model (R² = 0.28) leaves most of the variance unexplained. Looking back, that makes sense — trip duration depends on things I don't have: weather, rider age, route elevation, how long someone spent at a red light. You'd need more data to do better.
+
+The negative R² scores were the most educational part of the project. They make it really obvious when a model is a bad fit. If I'd only looked at RMSE, I might have thought the linear models were just "kinda bad." The negative R² says they're systematically broken for this problem.
+
+Clustering was the least satisfying section. Silhouette scores below 0.2 across all three methods — the trips just don't form clean groups. That's not a bug in the algorithms, it's an honest property of the data: bikeshare trips in a summer month are a smooth mix of commuting, errands, and leisure with no hard edges between them.
+
+The 62% classification ceiling bugged me until I remembered it's July. In winter, casual riders basically disappear — the split would be more like 80/20 and the classification signal would be stronger. But July is peak tourism, so members and casuals both take short recreational trips along the lakefront. They're harder to tell apart. If I were doing this again, I'd compare summer and winter months side by side.
 
 ## How to Run
 
