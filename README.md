@@ -109,7 +109,7 @@ The best silhouette score was 0.185 at k=7. That is pretty weak — the data doe
 
 **DBSCAN**: defines clusters as dense regions and marks sparse points as noise. It found 2 clusters and labeled 176 points as noise out of 15,000. The silhouette was 0.544 on the non-noise points, but that is misleading — it only looks at the easy points and ignores the outliers.
 
-K-Means was the most useful of the three. The cluster profiles made sense — one cluster was mostly short weekday commutes, another was longer weekend leisure trips. But even then, the low silhouette scores tell the real story: the trip data is fairly continuous and does not have clean boundaries between groups.
+K-Means with k=7 gave the best silhouette score at 0.185 — but all scores were low across every value of k. The honest conclusion is that trips form a continuum rather than clean clusters.
 
 ## PCA
 
